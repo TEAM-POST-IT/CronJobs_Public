@@ -1,8 +1,8 @@
 name: Stack Over Flow Crawling
 
-on:
-  schedule:
-  - cron: "00 16 * * *"
+# on:
+  # schedule:
+  # - cron: "00 16 * * *"
 
 jobs:
   build:

@@ -1,12 +1,8 @@
 name: Youtube_Blog_Crawling
 
-on:
-  schedule:
-  - cron: "00 16 * * *"
-  
-  push:
-    branches:
-    - master
+# on:
+#   schedule:
+#   - cron: "00 16 * * *"
     
 jobs:
   build:

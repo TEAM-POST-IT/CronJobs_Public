@@ -1,8 +1,8 @@
 name: Create Report
 
-on:
-  schedule:
-  - cron: "30 16 * * 0"
+# on:
+#   schedule:
+#   - cron: "30 16 * * 0"
   
 jobs:
   build:
