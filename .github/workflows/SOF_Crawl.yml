@@ -1,0 +1,72 @@
+name: Stack Over Flow Crawling
+
+on:
+  schedule:
+  - cron: "00 16 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      working-directory: Crawler
+      run: |
+        pip3 install --upgrade pip
+        pip3 install -r req.txt
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} # if you have/need it
+        aws-region: ap-northeast-2
+
+    - name: Public IP
+      id: ip
+      uses: haythem/public-ip@v1.2
+    
+    - name: Print Public IP
+      run: |
+        echo ${{steps.ip.outputs.ipv4}}
+
+    # Action이 돌아가는 Runner의 ip주소를 허용해줘야함
+    - name: Allow Security group rule to connect Github Actions to Mongo-port
+      run: |
+        aws ec2 authorize-security-group-ingress --group-name post-it --protocol tcp --port 65121 --cidr ${{steps.ip.outputs.ipv4}}/32
+
+    - name: Crawl SOF
+      working-directory: Crawler
+      run: |
+        python3 SOF_Crawler_NLP.py
+      env:
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_PORT: ${{ secrets.DB_PORT }}
+        DB_USERNAME: ${{ secrets.DB_USERNAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+
+    - name: Deny Security group rule to connect Github Actions to Mongo-port
+      run: |
+        aws ec2 revoke-security-group-ingress --group-name post-it --protocol tcp --port 65121 --cidr ${{steps.ip.outputs.ipv4}}/32
+      if: always()
+
+    - name: action-slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        author_name: Github Action Test # default: 8398a7@action-slack
+        fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # required
+      if: always() # Pick up events even if the job fails or is canceled.
+
+
